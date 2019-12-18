@@ -10,7 +10,7 @@ public class StgLastUpdateGetterPage extends SimplePageImpl {
 	}
 
 	public void setLastUpdate() throws IOException {
-		HashMap<String, String> formData = new HashMap<>();
+		HashMap<String, String> formData = new HashMap<String, String>();
 		formData.put("_137_cmd", "cacheDb");
 		super.submit(formData);
 	}

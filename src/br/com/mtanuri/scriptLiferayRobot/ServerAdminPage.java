@@ -14,13 +14,13 @@ public class ServerAdminPage extends SimplePageImpl {
 	}
 
 	public void clearCacheDB() throws IOException {
-		HashMap<String, String> formData = new HashMap<>();
+		HashMap<String, String> formData = new HashMap<String, String>();
 		formData.put("_137_cmd", "cacheDb");
 		super.submit(formData);
 	}
 
 	public ServerAdminPage runScript(String language, String script) throws IOException {
-		HashMap<String, String> formData = new HashMap<>();
+		HashMap<String, String> formData = new HashMap<String, String>();
 		formData.put("_137_cmd", "runScript");
 		formData.put("_137_language", language);
 		formData.put("_137_script", script);

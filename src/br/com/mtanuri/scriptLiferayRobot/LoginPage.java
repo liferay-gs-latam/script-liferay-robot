@@ -10,7 +10,7 @@ public class LoginPage extends SimplePageImpl {
 	}
 
 	public void doLogin(String user, String pass) throws IOException {
-		HashMap<String, String> formData = new HashMap<>();
+		HashMap<String, String> formData = new HashMap<String, String>();
 		formData.put("_58_login", user);
 		formData.put("_58_password", pass);
 		super.submit(formData);
