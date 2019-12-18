@@ -65,32 +65,48 @@ public class App {
 									ipGetterPage.getCookies());
 							p.connectWithCookies();
 
-							if (!p.isMacroDeployed()) {
-								String scriptName = "redeployClubeMacro.groovy";
-								LOGGER.info("Clube Macro Portlet IS NOT deployed correctly at "
-										+ ipGetterPage.getCurrentNode() + " ...");
-								LOGGER.info("Executing script " + scriptName + " at " + ipGetterPage.getCurrentNode()
-										+ " ...");
-								Script script = Script.getInstance(scriptName);
-								new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
-										ipGetterPage.getCookies()).runScript(script.getType(), script.getScriptCode());
-							} else {
-								LOGGER.info("Clube Macro Portlet is deployed correctly at "
-										+ ipGetterPage.getCurrentNode() + " ...");
+							String portletsToRedeploy_pluginRequired = PropertiesUtil.getInstance()
+									.getPropertie("site.redeploy.portlets.withPlugins");
+
+							String portletsToRedeploy_pluginNotRequired = PropertiesUtil.getInstance()
+									.getPropertie("site.redeploy.portlets.withoutPlugins");
+
+							String[] portletsToRedeploy_pluginRequiredArray = {};
+							if (portletsToRedeploy_pluginRequired != null
+									&& !portletsToRedeploy_pluginRequired.isEmpty()) {
+								portletsToRedeploy_pluginRequiredArray = portletsToRedeploy_pluginRequired.split(",");
 							}
 
-							if (!p.isOptinDeployed()) {
-								String scriptName = "redeployOptin.groovy";
-								LOGGER.info("Optin Portlet IS NOT deployed correctly at "
-										+ ipGetterPage.getCurrentNode() + " ...");
-								LOGGER.info("Executing script " + scriptName + " at " + ipGetterPage.getCurrentNode()
-										+ " ...");
-								Script script = Script.getInstance(scriptName);
-								new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
-										ipGetterPage.getCookies()).runScript(script.getType(), script.getScriptCode());
-							} else {
-								LOGGER.info("Optin Portlet is deployed correctly at " + ipGetterPage.getCurrentNode()
-										+ " ...");
+							String[] portletsToRedeploy_pluginNotRequiredArray = {};
+							if (portletsToRedeploy_pluginNotRequired != null
+									&& !portletsToRedeploy_pluginNotRequired.isEmpty()) {
+								portletsToRedeploy_pluginNotRequiredArray = portletsToRedeploy_pluginNotRequired
+										.split(",");
+							}
+
+							String portletsNameConfig[][] = { portletsToRedeploy_pluginRequiredArray,
+									portletsToRedeploy_pluginNotRequiredArray };
+
+							for (int i = 0; i < portletsNameConfig.length; i++) {
+								String[] portletsName = portletsNameConfig[i];
+								for (String portletName : portletsName) {
+									boolean mustToHavePlugins = i == 0;
+									if (!p.isPortletDeployed(portletName, mustToHavePlugins)) {
+										String scriptName = "redeploy-" + portletName.trim().replaceAll(" ", "")
+												+ ".groovy";
+										LOGGER.info(portletName + " IS NOT deployed correctly at "
+												+ ipGetterPage.getCurrentNode() + " ...");
+										LOGGER.info("Executing script " + scriptName + " at "
+												+ ipGetterPage.getCurrentNode() + " ...");
+										Script script = Script.getInstance(scriptName);
+										new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
+												ipGetterPage.getCookies()).runScript(script.getType(),
+														script.getScriptCode());
+									} else {
+										LOGGER.info(portletName + " is deployed correctly at "
+												+ ipGetterPage.getCurrentNode() + " ...");
+									}
+								}
 							}
 
 						} else {

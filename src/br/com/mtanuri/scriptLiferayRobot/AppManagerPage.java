@@ -12,15 +12,7 @@ public class AppManagerPage extends SimplePageImpl {
 		super(siteDomain, PropertiesUtil.getInstance().getPropertie("site.appManager.url"), cookies);
 	}
 
-	public boolean isMacroDeployed() throws IOException {
-		return isPortletDeployed("smiles-memberships-portlet");
-	}
-
-	public boolean isOptinDeployed() throws IOException {
-		return isPortletDeployed("smiles-account-portlet");
-	}
-
-	private boolean isPortletDeployed(String portletName) throws IOException {
+	public boolean isPortletDeployed(String portletName, boolean mustToHavePlugins) throws IOException {
 		Elements elements = this.getDoc()
 				.select('.' + PropertiesUtil.getInstance().getPropertie("site.probe.app.element"));
 		for (Element element : elements) {
@@ -30,6 +22,9 @@ public class AppManagerPage extends SimplePageImpl {
 							.selectFirst(
 									'.' + PropertiesUtil.getInstance().getPropertie("site.probe.app.element.child"))
 							.text().contains(portletName)) {
+				if (!mustToHavePlugins) {
+					return true;
+				}
 				if (element.selectFirst(".plugins") != null
 						&& element.selectFirst(".plugins").selectFirst(".summary") != null) {
 					return true;
