@@ -58,16 +58,54 @@ public class App {
 					if (loginPage.isLoginSucess()) {
 						LOGGER.info("Login success!");
 
-						LOGGER.info("Executing script " + config.getScriptName() + " at "
-								+ ipGetterPage.getCurrentNode() + " ...");
-						Script script = Script.getInstance(config.getScriptName());
-						ServerAdminPage runScript = new ServerAdminPage(config.getEnvironment().getUrl(),
-								loginPage.getAuthToken(), ipGetterPage.getCookies()).runScript(script.getType(),
-										script.getScriptCode());
-						if (config.isPrintStatus()) {
-							String folderName = config.getScriptName() + "_" + TimeUtil.getInstance().getTimeInMillis();
-							String fileName = ipGetterPage.getCurrentNode();
-							runScript.printScriptResult(folderName, fileName, config.getOutputFile());
+						if (config.getScriptName().equals("full")) {
+							LOGGER.info(
+									"Validating portlets deploy status at " + ipGetterPage.getCurrentNode() + " ...");
+							AppManagerPage p = new AppManagerPage(config.getEnvironment().getUrl(),
+									ipGetterPage.getCookies());
+							p.connectWithCookies();
+
+							if (!p.isMacroDeployed()) {
+								String scriptName = "redeployClubeMacro.groovy";
+								LOGGER.info("Clube Macro Portlet IS NOT deployed correctly at "
+										+ ipGetterPage.getCurrentNode() + " ...");
+								LOGGER.info("Executing script " + scriptName + " at " + ipGetterPage.getCurrentNode()
+										+ " ...");
+								Script script = Script.getInstance(scriptName);
+								new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
+										ipGetterPage.getCookies()).runScript(script.getType(), script.getScriptCode());
+							} else {
+								LOGGER.info("Clube Macro Portlet is deployed correctly at "
+										+ ipGetterPage.getCurrentNode() + " ...");
+							}
+
+							if (!p.isOptinDeployed()) {
+								String scriptName = "redeployOptin.groovy";
+								LOGGER.info("Optin Portlet IS NOT deployed correctly at "
+										+ ipGetterPage.getCurrentNode() + " ...");
+								LOGGER.info("Executing script " + scriptName + " at " + ipGetterPage.getCurrentNode()
+										+ " ...");
+								Script script = Script.getInstance(scriptName);
+								new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
+										ipGetterPage.getCookies()).runScript(script.getType(), script.getScriptCode());
+							} else {
+								LOGGER.info("Optin Portlet is deployed correctly at " + ipGetterPage.getCurrentNode()
+										+ " ...");
+							}
+
+						} else {
+							LOGGER.info("Executing script " + config.getScriptName() + " at "
+									+ ipGetterPage.getCurrentNode() + " ...");
+							Script script = Script.getInstance(config.getScriptName());
+							ServerAdminPage runScript = new ServerAdminPage(config.getEnvironment().getUrl(),
+									loginPage.getAuthToken(), ipGetterPage.getCookies()).runScript(script.getType(),
+											script.getScriptCode());
+							if (config.isPrintStatus()) {
+								String folderName = config.getScriptName() + "_"
+										+ TimeUtil.getInstance().getTimeInMillis();
+								String fileName = ipGetterPage.getCurrentNode();
+								runScript.printScriptResult(folderName, fileName, config.getOutputFile());
+							}
 						}
 
 						LOGGER.info("Signing out " + ipGetterPage.getCurrentNode() + " ...");

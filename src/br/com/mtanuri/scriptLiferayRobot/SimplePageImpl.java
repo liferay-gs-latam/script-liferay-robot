@@ -50,6 +50,17 @@ public class SimplePageImpl implements Page {
 	}
 
 	@Override
+	public void connectWithCookies() throws IOException {
+		String agent = AGENT;
+
+		response = Jsoup.connect(url).method(Connection.Method.GET).userAgent(agent).cookies(this.cookies)
+				.timeout(Integer.valueOf(PropertiesUtil.getInstance().getPropertie("app.connection.timeout")))
+				.execute();
+		doc = response.parse();
+		this.cookies.putAll(response.cookies());
+	}
+
+	@Override
 	public void submit(HashMap<String, String> formData) throws IOException {
 		String agent = AGENT;
 

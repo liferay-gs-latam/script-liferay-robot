@@ -12,11 +12,13 @@ public interface Page {
 			+ "          \" 6.1; WOW64) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.874.120 Safari/535.2\"";
 
 	void connect() throws IOException;
+	
+	void connectWithCookies() throws IOException;
 
 	public void submit(HashMap<String, String> formData) throws IOException;
 
 	public HashMap<String, String> getCookies();
-
+	
 	public String getUrl();
 
 	public Connection.Response getResponse();
