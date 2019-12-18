@@ -16,7 +16,7 @@ Type -help to get more information about the parameters you must to give me Nice
 
 -m [maxAttempts]: Number of attempts that the robot is going to perform to connect on the server
 
--c [clusterSize]: Number of cluster that the robot is going to discovery and try connecting into to it.
+-c [clusterSize]: Number of cluster nodes that the robot is going to discovery and try connecting into to it.
 
 -h [server]: The server prefix hostname
 
