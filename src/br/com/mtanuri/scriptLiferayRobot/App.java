@@ -28,7 +28,7 @@ public class App {
 		run(config);
 	}
 
-	private static void run(AppConfig config) {
+	private static void run(AppConfig config) throws IOException {
 		LOGGER.info("************************************************************************************************"
 				+ "\nHi! I'm Nicolas, the script executor robot!"
 				+ "\nI'm going to help you by executing any script in a customer site."
@@ -40,6 +40,7 @@ public class App {
 
 		printBanner();
 		LOGGER.info("Started: " + LOGGER.getName());
+		LOGGER.info("Build Version: " + PropertiesUtil.getInstance().getPropertie("build.version"));
 		LOGGER.info(config.toString());
 		LOGGER.info("Executing automation at " + config.getEnvironment().getUrl() + " ...");
 
@@ -63,9 +64,9 @@ public class App {
 					if (loginPage.isLoginSucess()) {
 						LOGGER.info("Login success!");
 
+						// Portlets deploy status validation
 						if (config.getScriptName().equals("full")) {
 
-							// Portlets deploy status validation
 							LOGGER.info(
 									"Validating portlets deploy status at " + ipGetterPage.getCurrentNode() + " ...");
 							AppManagerPage p = new AppManagerPage(config.getEnvironment().getUrl(),
@@ -118,8 +119,8 @@ public class App {
 
 						}
 
+						// Cache replication validation
 						else if (config.getScriptName().equals("cache")) {
-							// Cache replication validation
 							LOGGER.info("Validating cache replication health status at " + ipGetterPage.getCurrentNode()
 									+ " ...");
 
@@ -133,6 +134,7 @@ public class App {
 							c.setFieldValue(timestamp);
 						}
 
+						// Single script execution
 						else {
 							LOGGER.info("Executing script " + config.getScriptName() + " at "
 									+ ipGetterPage.getCurrentNode() + " ...");
