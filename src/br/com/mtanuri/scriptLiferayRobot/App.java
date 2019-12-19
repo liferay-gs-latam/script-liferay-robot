@@ -1,5 +1,10 @@
 package br.com.mtanuri.scriptLiferayRobot;
 
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,8 +29,6 @@ public class App {
 	}
 
 	private static void run(AppConfig config) {
-		LOGGER.info("Started: " + LOGGER.getName());
-
 		LOGGER.info("************************************************************************************************"
 				+ "\nHi! I'm Nicolas, the script executor robot!"
 				+ "\nI'm going to help you by executing any script in a customer site."
@@ -35,6 +38,8 @@ public class App {
 				+ "\nNice to meet you! :)"
 				+ "\n************************************************************************************************");
 
+		printBanner();
+		LOGGER.info("Started: " + LOGGER.getName());
 		LOGGER.info(config.toString());
 		LOGGER.info("Executing automation at " + config.getEnvironment().getUrl() + " ...");
 
@@ -59,6 +64,8 @@ public class App {
 						LOGGER.info("Login success!");
 
 						if (config.getScriptName().equals("full")) {
+
+							// Portlets deploy status validation
 							LOGGER.info(
 									"Validating portlets deploy status at " + ipGetterPage.getCurrentNode() + " ...");
 							AppManagerPage p = new AppManagerPage(config.getEnvironment().getUrl(),
@@ -109,7 +116,24 @@ public class App {
 								}
 							}
 
-						} else {
+						}
+
+						else if (config.getScriptName().equals("cache")) {
+							// Cache replication validation
+							LOGGER.info("Validating cache replication health status at " + ipGetterPage.getCurrentNode()
+									+ " ...");
+
+							Long timestamp = System.currentTimeMillis();
+
+							CustomFieldsPage c = new CustomFieldsPage(config.getEnvironment().getUrl(),
+									loginPage.getAuthToken(), ipGetterPage.getCookies());
+							c.connectWithCookies();
+							System.out.println(
+									c.getDoc().selectFirst("#znux_null_null_last_2d_stg_2d_publication").val());
+							c.setFieldValue(timestamp);
+						}
+
+						else {
 							LOGGER.info("Executing script " + config.getScriptName() + " at "
 									+ ipGetterPage.getCurrentNode() + " ...");
 							Script script = Script.getInstance(config.getScriptName());
@@ -154,5 +178,36 @@ public class App {
 		}
 
 		LOGGER.info("Finished with " + attempts + " attempts. Number of accessed nodes: " + String.valueOf(map.size()));
+	}
+
+	private static void printBanner() {
+		int width = 100;
+		int height = 30;
+
+		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		Graphics g = image.getGraphics();
+		g.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+		Graphics2D graphics = (Graphics2D) g;
+		graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		graphics.drawString("ClusterTools", 0, 20);
+		System.out.println("**************************************************************************************");
+
+		for (int y = 0; y < height; y++) {
+			StringBuilder sb = new StringBuilder();
+			for (int x = 0; x < width; x++) {
+
+				sb.append(image.getRGB(x, y) == -16777216 ? " " : "$");
+
+			}
+
+			if (sb.toString().trim().isEmpty()) {
+				continue;
+			}
+
+			System.out.println(sb);
+		}
+		System.out.println("**************************************************************************************");
+
 	}
 }
