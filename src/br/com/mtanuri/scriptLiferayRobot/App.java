@@ -19,7 +19,7 @@ public class App {
 
 	private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		if (Arrays.asList(args).contains("-help")) {
 			LOGGER.info(AppConfig.getDoc());
 			return;
@@ -28,7 +28,7 @@ public class App {
 		run(config);
 	}
 
-	private static void run(AppConfig config) throws IOException {
+	private static void run(AppConfig config) throws IOException, InterruptedException {
 		LOGGER.info("************************************************************************************************"
 				+ "\nHi! I'm Nicolas, the script executor robot!"
 				+ "\nI'm going to help you by executing any script in a customer site."
@@ -43,6 +43,13 @@ public class App {
 		LOGGER.info("Build Version: " + PropertiesUtil.getInstance().getPropertie("build.version"));
 		LOGGER.info(config.toString());
 		LOGGER.info("Executing automation at " + config.getEnvironment().getUrl() + " ...");
+
+		Long time = System.currentTimeMillis();
+		if (config.getScriptName().equals("full") && config.getEnvironment().getServer().equals("prd")) {
+			updateExpandoValue(time, config);
+			LOGGER.info("Waiting for cache replication before starting validations ...");
+			wait_(20);
+		}
 
 		HashMap<String, String> map = new HashMap<String, String>();
 
@@ -64,9 +71,9 @@ public class App {
 					if (loginPage.isLoginSucess()) {
 						LOGGER.info("Login success!");
 
-						// Portlets deploy status validation
 						if (config.getScriptName().equals("full")) {
 
+							// Portlets deploy status validation
 							LOGGER.info(
 									"Validating portlets deploy status at " + ipGetterPage.getCurrentNode() + " ...");
 							AppManagerPage p = new AppManagerPage(config.getEnvironment().getUrl(),
@@ -117,21 +124,30 @@ public class App {
 								}
 							}
 
-						}
+							// Cache replication validation
+							if (config.getEnvironment().getServer().equals("prd")) {
+								LOGGER.info("Validating cache replication health status at "
+										+ ipGetterPage.getCurrentNode() + " ...");
 
-						// Cache replication validation
-						else if (config.getScriptName().equals("cache")) {
-							LOGGER.info("Validating cache replication health status at " + ipGetterPage.getCurrentNode()
-									+ " ...");
-
-							Long timestamp = System.currentTimeMillis();
-
-							CustomFieldsPage c = new CustomFieldsPage(config.getEnvironment().getUrl(),
-									loginPage.getAuthToken(), ipGetterPage.getCookies());
-							c.connectWithCookies();
-							System.out.println(
-									c.getDoc().selectFirst("#znux_null_null_last_2d_stg_2d_publication").val());
-							c.setFieldValue(timestamp);
+								CustomFieldsPage c = new CustomFieldsPage(config.getEnvironment().getUrl(),
+										loginPage.getAuthToken(), ipGetterPage.getCookies());
+								c.connectWithCookies();
+								String val = c.getDoc().selectFirst("#znux_null_null_last_2d_stg_2d_publication").val();
+								if (!val.equals(String.valueOf(time))) {
+									String clearCacheScript = "clearCache.groovy";
+									LOGGER.info("Cache replication IS NOT working at " + ipGetterPage.getCurrentNode()
+											+ " ...");
+									LOGGER.info("Executing script " + clearCacheScript + " at "
+											+ ipGetterPage.getCurrentNode() + " ...");
+									Script script = Script.getInstance(clearCacheScript);
+									new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
+											ipGetterPage.getCookies()).runScript(script.getType(),
+													script.getScriptCode());
+								} else {
+									LOGGER.info("Cache replication is working correctly at "
+											+ ipGetterPage.getCurrentNode() + " ...");
+								}
+							}
 						}
 
 						// Single script execution
@@ -180,6 +196,84 @@ public class App {
 		}
 
 		LOGGER.info("Finished with " + attempts + " attempts. Number of accessed nodes: " + String.valueOf(map.size()));
+	}
+
+	private static void wait_(int secounds) throws InterruptedException {
+		for (int i = secounds; i >= 0; i--) {
+			System.out.print(":::");
+			Thread.sleep(1000);
+		}
+		System.out.println("");
+	}
+
+	private static void updateExpandoValue(Long time, AppConfig config) throws InterruptedException {
+		HashMap<String, String> map = new HashMap<String, String>();
+
+		int attempts = 0;
+		while (!(map.size() >= 1 || attempts >= 10)) {
+
+			try {
+
+				String newUrl = config.getEnvironment().getUrl().replace("prd", "pub");
+				IpGetterPage ipGetterPage = new IpGetterPage(newUrl);
+				ipGetterPage.connect();
+
+				if (!map.containsKey(ipGetterPage.getCurrentNode())) {
+
+					LOGGER.info("Signing in " + ipGetterPage.getCurrentNode() + " ...");
+
+					LoginPage loginPage = new LoginPage(newUrl, ipGetterPage.getCookies());
+					loginPage.doLogin(config.getUser(), config.getPass());
+
+					if (loginPage.isLoginSucess()) {
+						LOGGER.info("Login success!");
+
+						String newScriptName = "updateExpandoValue.groovy";
+
+						LOGGER.info(
+								"Executing script " + newScriptName + " at " + ipGetterPage.getCurrentNode() + " ...");
+
+						Script script = Script.getInstance(newScriptName);
+						new ServerAdminPage(newUrl, loginPage.getAuthToken(), ipGetterPage.getCookies()).runScript(
+								script.getType(), script.getScriptCode().replace("$time", String.valueOf(time)));
+
+						String newScriptName2 = "clearCache.groovy";
+
+						LOGGER.info(
+								"Executing script " + newScriptName2 + " at " + ipGetterPage.getCurrentNode() + " ...");
+
+						Script script2 = Script.getInstance(newScriptName2);
+						new ServerAdminPage(newUrl, loginPage.getAuthToken(), ipGetterPage.getCookies())
+								.runScript(script2.getType(), script2.getScriptCode());
+
+						LOGGER.info("Signing out " + ipGetterPage.getCurrentNode() + " ...");
+						new SimplePageImpl(newUrl, PropertiesUtil.getInstance().getPropertie("site.logout.url"),
+								ipGetterPage.getCookies());
+					}
+
+					else {
+						LOGGER.warning("Login failed");
+					}
+
+					map.put(ipGetterPage.getCurrentNode(), ipGetterPage.getCurrentNode());
+				}
+			}
+
+			catch (java.net.SocketTimeoutException e) {
+				LOGGER.warning("time out");
+			}
+
+			catch (org.jsoup.HttpStatusException e) {
+				LOGGER.warning("504");
+			}
+
+			catch (IOException e) {
+				LOGGER.warning("connection error");
+			}
+
+			attempts++;
+		}
+		LOGGER.info("ExpandoValue Update finished with " + attempts + " attempts.");
 	}
 
 	private static void printBanner() {

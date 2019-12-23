@@ -6,7 +6,7 @@ import java.util.Scanner;
 
 public class Script {
 
-	private static Script single_instance = null;
+	//private static Script single_instance = null;
 
 	private String name;
 	private final String path = "/br/com/mtanuri/scriptLiferayRobot/scripts/";
@@ -16,10 +16,10 @@ public class Script {
 	}
 
 	public static Script getInstance(String name) throws IOException {
-		if (single_instance == null)
-			single_instance = new Script(name);
+		//if (single_instance == null)
+		//	single_instance = new Script(name);
 
-		return single_instance;
+		return new Script(name);
 	}
 
 	public String getScriptCode() {

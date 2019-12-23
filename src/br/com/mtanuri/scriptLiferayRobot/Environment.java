@@ -38,4 +38,8 @@ public class Environment {
 		return "Environment [blueGreen=" + blueGreen + ", server=" + server + ", sufix=" + sufix + "]";
 	}
 
+	public String getServer() {
+		return server;
+	}
+
 }
