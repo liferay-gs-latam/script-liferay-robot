@@ -35,7 +35,8 @@ public class App {
 				+ "\nBe sure you are connected at customer VPN."
 				+ "\nIf you get some handshake error try changing your internet connection from wi-fi to 4G."
 				+ "\ntype -help to get more information about the parameters you must to give me"
-				+ "\nNice to meet you! :)"
+				+ "\nNice to meet you! :)" + "\nmore info, see:"
+				+ PropertiesUtil.getInstance().getPropertie("git.repository")
 				+ "\n************************************************************************************************");
 
 		printBanner();

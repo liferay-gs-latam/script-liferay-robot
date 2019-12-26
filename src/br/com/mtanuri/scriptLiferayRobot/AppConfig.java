@@ -165,6 +165,11 @@ public class AppConfig {
 		sb.append("-u [user]: The username to access liferay portal");
 		sb.append("\n");
 		sb.append("-p [pass]: The user password");
+		sb.append("\n");
+		try {
+			sb.append("more info, see: " + PropertiesUtil.getInstance().getPropertie("git.repository"));
+		} catch (Exception e) {
+		}
 		return sb.toString();
 	}
 }
