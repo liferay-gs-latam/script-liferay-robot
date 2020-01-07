@@ -46,7 +46,10 @@ public class App {
 		LOGGER.info("Executing automation at " + config.getEnvironment().getUrl() + " ...");
 
 		Long time = System.currentTimeMillis();
+		int clusterSize = config.getClusterSize();
+		
 		if (config.getScriptName().equals("full") && config.getEnvironment().getServer().equals("prd")) {
+			clusterSize = clusterSizeDicovery(config);
 			updateExpandoValue(time, config);
 			LOGGER.info("Waiting for cache replication before starting validations ...");
 			wait_(20);
@@ -55,7 +58,7 @@ public class App {
 		HashMap<String, String> map = new HashMap<String, String>();
 
 		int attempts = 0;
-		while (!(map.size() >= config.getClusterSize() || attempts >= config.getMaxAttempts())) {
+		while (!(map.size() >= clusterSize || attempts >= config.getMaxAttempts())) {
 
 			try {
 
@@ -112,12 +115,16 @@ public class App {
 												+ ".groovy";
 										LOGGER.info(portletName + " IS NOT deployed correctly at "
 												+ ipGetterPage.getCurrentNode() + " ...");
-										LOGGER.info("Executing script " + scriptName + " at "
-												+ ipGetterPage.getCurrentNode() + " ...");
-										Script script = Script.getInstance(scriptName);
-										new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
-												ipGetterPage.getCookies()).runScript(script.getType(),
-														script.getScriptCode());
+										if (!config.isReadOnly()) {
+											LOGGER.info("Executing script " + scriptName + " at "
+													+ ipGetterPage.getCurrentNode() + " ...");
+											Script script = Script.getInstance(scriptName);
+											new ServerAdminPage(config.getEnvironment().getUrl(),
+													loginPage.getAuthToken(), ipGetterPage.getCookies())
+															.runScript(script.getType(), script.getScriptCode());
+										} else {
+											LOGGER.info("Readonly mode is enabled");
+										}
 									} else {
 										LOGGER.info(portletName + " is deployed correctly at "
 												+ ipGetterPage.getCurrentNode() + " ...");
@@ -138,12 +145,16 @@ public class App {
 									String clearCacheScript = "clearCache.groovy";
 									LOGGER.info("Cache replication IS NOT working at " + ipGetterPage.getCurrentNode()
 											+ " ...");
-									LOGGER.info("Executing script " + clearCacheScript + " at "
-											+ ipGetterPage.getCurrentNode() + " ...");
-									Script script = Script.getInstance(clearCacheScript);
-									new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
-											ipGetterPage.getCookies()).runScript(script.getType(),
-													script.getScriptCode());
+									if (!config.isReadOnly()) {
+										LOGGER.info("Executing script " + clearCacheScript + " at "
+												+ ipGetterPage.getCurrentNode() + " ...");
+										Script script = Script.getInstance(clearCacheScript);
+										new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
+												ipGetterPage.getCookies()).runScript(script.getType(),
+														script.getScriptCode());
+									} else {
+										LOGGER.info("Readonly mode is enabled");
+									}
 								} else {
 									LOGGER.info("Cache replication is working correctly at "
 											+ ipGetterPage.getCurrentNode() + " ...");
@@ -275,6 +286,69 @@ public class App {
 			attempts++;
 		}
 		LOGGER.info("ExpandoValue Update finished with " + attempts + " attempts.");
+	}
+
+	private static int clusterSizeDicovery(AppConfig config) throws InterruptedException {
+		HashMap<String, String> map = new HashMap<String, String>();
+		int numberOfLicenses = 0;
+
+		int attempts = 0;
+		while (!(map.size() >= 1 || attempts >= 10)) {
+
+			try {
+
+				String newUrl = config.getEnvironment().getUrl().replace("prd", "pub");
+				IpGetterPage ipGetterPage = new IpGetterPage(newUrl);
+				ipGetterPage.connect();
+
+				if (!map.containsKey(ipGetterPage.getCurrentNode())) {
+
+					LOGGER.info("Signing in " + ipGetterPage.getCurrentNode() + " ...");
+
+					LoginPage loginPage = new LoginPage(newUrl, ipGetterPage.getCookies());
+					loginPage.doLogin(config.getUser(), config.getPass());
+
+					if (loginPage.isLoginSucess()) {
+						LOGGER.info("Login success!");
+
+						LicenseManagerPage licenseManagerPage = new LicenseManagerPage(newUrl,
+								ipGetterPage.getCookies());
+						licenseManagerPage.connectWithCookies();
+
+						LOGGER.info(
+								"Discovering number of licenses " + " at " + ipGetterPage.getCurrentNode() + " ...");
+						numberOfLicenses = licenseManagerPage.getNumberOfLicenses();
+						LOGGER.info(numberOfLicenses + " licenses were discovered" + " at "
+								+ ipGetterPage.getCurrentNode() + " ...");
+
+						LOGGER.info("Signing out " + ipGetterPage.getCurrentNode() + " ...");
+						new SimplePageImpl(newUrl, PropertiesUtil.getInstance().getPropertie("site.logout.url"),
+								ipGetterPage.getCookies());
+
+					} else {
+						LOGGER.warning("Login failed");
+					}
+
+					map.put(ipGetterPage.getCurrentNode(), ipGetterPage.getCurrentNode());
+				}
+			}
+
+			catch (java.net.SocketTimeoutException e) {
+				LOGGER.warning("time out");
+			}
+
+			catch (org.jsoup.HttpStatusException e) {
+				LOGGER.warning("504");
+			}
+
+			catch (IOException e) {
+				LOGGER.warning("connection error");
+			}
+
+			attempts++;
+		}
+		LOGGER.info("Discovery finished with " + attempts + " attempts.");
+		return numberOfLicenses - 1;
 	}
 
 	private static void printBanner() {

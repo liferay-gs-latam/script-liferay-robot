@@ -4,9 +4,10 @@ public class AppConfig {
 
 	private String scriptName;
 	private String printStatus;
-	private int maxAttempts = 150;
-	private int clusterSize = 8;
+	private int maxAttempts = 200;
+	private int clusterSize = 1;
 	private Environment environment = new Environment();
+	private boolean readOnly;
 
 	private String user;
 	private String pass;
@@ -74,6 +75,12 @@ public class AppConfig {
 						clusterSize = Integer.parseInt(arg.replace(paramName, ""));
 						continue;
 					}
+
+					paramName = "-r";
+					if (arg.toLowerCase().startsWith(paramName)) {
+						readOnly = Boolean.parseBoolean(arg.replace(paramName, ""));
+						continue;
+					}
 				}
 			}
 		}
@@ -120,6 +127,10 @@ public class AppConfig {
 		return clusterSize;
 	}
 
+	public boolean isReadOnly() {
+		return readOnly;
+	}
+
 	public String getUser() {
 		return user;
 	}
@@ -139,8 +150,8 @@ public class AppConfig {
 	@Override
 	public String toString() {
 		return "AppConfig [scriptName=" + scriptName + ", printStatus=" + printStatus + ", maxAttempts=" + maxAttempts
-				+ ", clusterSize=" + clusterSize + ", environment=" + environment + ", user=" + user + ", pass="
-				+ "**********" + "]";
+				+ ", readOnly=" + readOnly + ", clusterSize=" + clusterSize + ", environment=" + environment + ", user="
+				+ user + ", pass=" + "**********" + "]";
 	}
 
 	public static String getDoc() {
@@ -165,6 +176,8 @@ public class AppConfig {
 		sb.append("-u [user]: The username to access liferay portal");
 		sb.append("\n");
 		sb.append("-p [pass]: The user password");
+		sb.append("\n");
+		sb.append("-r [readOnly]: Readonly when executing full script validation");
 		sb.append("\n");
 		try {
 			sb.append("more info, see: " + PropertiesUtil.getInstance().getPropertie("git.repository"));
