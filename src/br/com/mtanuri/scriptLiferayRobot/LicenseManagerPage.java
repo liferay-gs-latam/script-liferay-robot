@@ -10,7 +10,7 @@ public class LicenseManagerPage extends SimplePageImpl {
 	}
 
 	public int getNumberOfLicenses() throws IOException {
-		int table_elements = this.getDoc().select(".license-table").size();
+		int table_elements = this.getDoc().select("."+PropertiesUtil.getInstance().getPropertie("site.licenseManager.element")).size();
 		if (table_elements > 0) {
 			return (table_elements - 1) / 2;
 		}
