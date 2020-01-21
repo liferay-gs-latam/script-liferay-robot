@@ -10,7 +10,7 @@ public class AppConfig {
 	private boolean readOnly;
 
 	private String user = "administrador";
-	private String pass = "92lOt$267JT0nc1UQUTs";
+	private String pass = "******";
 
 	public AppConfig(String user, String pass) {
 		this.user = user;
