@@ -47,12 +47,27 @@ public class App {
 
 		Long time = System.currentTimeMillis();
 		int clusterSize = config.getClusterSize();
-		
-		if (config.getScriptName().equals("full") && config.getEnvironment().getServer().equals("prd")) {
+		boolean hasNewPublication = false;
+
+		if (config.getEnvironment().getServer().equals("prd")) {
 			clusterSize = clusterSizeDicovery(config);
-			updateExpandoValue(time, config);
-			LOGGER.info("Waiting for cache replication before starting validations ...");
-			wait_(20);
+			if (config.getScriptName().equals("fullCache")) {
+				String lastPublication = getLastPublication(time, config);
+				if (hasNewPublication(lastPublication, config)) {
+					hasNewPublication = true;
+					if(!config.isReadOnly()) {
+						updateExpandoValue(lastPublication, config);
+					}
+				} else {
+					LOGGER.info("Finished with no attempts due to any new publications found");
+					return;
+				}
+			}
+			if (config.getScriptName().equals("fullx")) { // dead code
+				updateExpandoValue(time, config);
+				LOGGER.info("Waiting for cache replication before starting validations ...");
+				wait_(20);
+			}
 		}
 
 		HashMap<String, String> map = new HashMap<String, String>();
@@ -132,8 +147,8 @@ public class App {
 								}
 							}
 
-							// Cache replication validation
-							if (config.getEnvironment().getServer().equals("prd")) {
+							// Staging publication validation
+							if (config.getEnvironment().getServer().equals("prdx")) { // dead code
 								LOGGER.info("Validating cache replication health status at "
 										+ ipGetterPage.getCurrentNode() + " ...");
 
@@ -159,6 +174,27 @@ public class App {
 									LOGGER.info("Cache replication is working correctly at "
 											+ ipGetterPage.getCurrentNode() + " ...");
 								}
+							}
+						}
+
+						else if (config.getScriptName().equals("fullCache")) {
+							if (hasNewPublication) {
+								String clearCacheScript = "clearCache.groovy";
+								LOGGER.info("Cache replication needed not executed yet at "
+										+ ipGetterPage.getCurrentNode() + " ...");
+								if (!config.isReadOnly()) {
+									LOGGER.info("Executing script " + clearCacheScript + " at "
+											+ ipGetterPage.getCurrentNode() + " ...");
+									Script script = Script.getInstance(clearCacheScript);
+									new ServerAdminPage(config.getEnvironment().getUrl(), loginPage.getAuthToken(),
+											ipGetterPage.getCookies()).runScript(script.getType(),
+													script.getScriptCode());
+								} else {
+									LOGGER.info("Readonly mode is enabled");
+								}
+							} else {
+								LOGGER.info("Cache replication already executed at " + ipGetterPage.getCurrentNode()
+										+ " ...");
 							}
 						}
 
@@ -216,6 +252,77 @@ public class App {
 			Thread.sleep(1000);
 		}
 		System.out.println("");
+	}
+
+	private static void updateExpandoValue(String lastPublication, AppConfig config) throws InterruptedException {
+		HashMap<String, String> map = new HashMap<String, String>();
+
+		int attempts = 0;
+		while (!(map.size() >= 1 || attempts >= 10)) {
+
+			try {
+
+				String newUrl = config.getEnvironment().getUrl().replace("prd", "pub");
+				IpGetterPage ipGetterPage = new IpGetterPage(newUrl);
+				ipGetterPage.connect();
+
+				if (!map.containsKey(ipGetterPage.getCurrentNode())) {
+
+					LOGGER.info("Signing in " + ipGetterPage.getCurrentNode() + " ...");
+
+					LoginPage loginPage = new LoginPage(newUrl, ipGetterPage.getCookies());
+					loginPage.doLogin(config.getUser(), config.getPass());
+
+					if (loginPage.isLoginSucess()) {
+						LOGGER.info("Login success!");
+
+						String newScriptName = "updateExpandoValue.groovy";
+
+						LOGGER.info(
+								"Executing script " + newScriptName + " at " + ipGetterPage.getCurrentNode() + " ...");
+
+						Script script = Script.getInstance(newScriptName);
+						new ServerAdminPage(newUrl, loginPage.getAuthToken(), ipGetterPage.getCookies()).runScript(
+								script.getType(),
+								script.getScriptCode().replace("$time", String.valueOf(lastPublication)));
+
+						String newScriptName2 = "clearCache.groovy";
+
+						LOGGER.info(
+								"Executing script " + newScriptName2 + " at " + ipGetterPage.getCurrentNode() + " ...");
+
+						Script script2 = Script.getInstance(newScriptName2);
+						new ServerAdminPage(newUrl, loginPage.getAuthToken(), ipGetterPage.getCookies())
+								.runScript(script2.getType(), script2.getScriptCode());
+
+						LOGGER.info("Signing out " + ipGetterPage.getCurrentNode() + " ...");
+						new SimplePageImpl(newUrl, PropertiesUtil.getInstance().getPropertie("site.logout.url"),
+								ipGetterPage.getCookies());
+					}
+
+					else {
+						LOGGER.warning("Login failed");
+					}
+
+					map.put(ipGetterPage.getCurrentNode(), ipGetterPage.getCurrentNode());
+				}
+			}
+
+			catch (java.net.SocketTimeoutException e) {
+				LOGGER.warning("time out");
+			}
+
+			catch (org.jsoup.HttpStatusException e) {
+				LOGGER.warning("504");
+			}
+
+			catch (IOException e) {
+				LOGGER.warning("connection error");
+			}
+
+			attempts++;
+		}
+		LOGGER.info("ExpandoValue Update finished with " + attempts + " attempts.");
 	}
 
 	private static void updateExpandoValue(Long time, AppConfig config) throws InterruptedException {
@@ -286,6 +393,144 @@ public class App {
 			attempts++;
 		}
 		LOGGER.info("ExpandoValue Update finished with " + attempts + " attempts.");
+	}
+
+	private static boolean hasNewPublication(String lastPublication, AppConfig config) throws InterruptedException {
+		HashMap<String, String> map = new HashMap<String, String>();
+
+		boolean newPublication = false;
+		int attempts = 0;
+		while (!(map.size() >= 1 || attempts >= 10)) {
+
+			try {
+
+				String newUrl = config.getEnvironment().getUrl().replace("prd", "pub");
+				IpGetterPage ipGetterPage = new IpGetterPage(newUrl);
+				ipGetterPage.connect();
+
+				if (!map.containsKey(ipGetterPage.getCurrentNode())) {
+
+					LOGGER.info("Signing in " + ipGetterPage.getCurrentNode() + " ...");
+
+					LoginPage loginPage = new LoginPage(newUrl, ipGetterPage.getCookies());
+					loginPage.doLogin(config.getUser(), config.getPass());
+
+					if (loginPage.isLoginSucess()) {
+						LOGGER.info("Login success!");
+
+						LOGGER.info("Verifying if there is new staging publication at " + ipGetterPage.getCurrentNode()
+								+ " ...");
+
+						CustomFieldsPage c = new CustomFieldsPage(newUrl, loginPage.getAuthToken(),
+								ipGetterPage.getCookies());
+						c.connectWithCookies();
+						String val = c.getDoc().selectFirst("#znux_null_null_last_2d_stg_2d_publication").val();
+						if (!val.equals(lastPublication)) {
+							LOGGER.info("Last clearing cache execution was at " + val);
+							LOGGER.info("New publication has been found " + ipGetterPage.getCurrentNode() + " ...");
+							newPublication = true;
+						} else {
+							LOGGER.info("Were not found new publications at " + ipGetterPage.getCurrentNode() + " ...");
+						}
+
+						LOGGER.info("Signing out " + ipGetterPage.getCurrentNode() + " ...");
+						new SimplePageImpl(newUrl, PropertiesUtil.getInstance().getPropertie("site.logout.url"),
+								ipGetterPage.getCookies());
+					}
+
+					else {
+						LOGGER.warning("Login failed");
+					}
+
+					map.put(ipGetterPage.getCurrentNode(), ipGetterPage.getCurrentNode());
+				}
+			}
+
+			catch (java.net.SocketTimeoutException e) {
+				LOGGER.warning("time out");
+			}
+
+			catch (org.jsoup.HttpStatusException e) {
+				LOGGER.warning("504");
+			}
+
+			catch (IOException e) {
+				LOGGER.warning("connection error");
+			}
+
+			attempts++;
+		}
+		LOGGER.info("Verifying new publications finished with " + attempts + " attempts.");
+		return newPublication;
+	}
+
+	private static String getLastPublication(Long time, AppConfig config) throws InterruptedException {
+		HashMap<String, String> map = new HashMap<String, String>();
+		String lastPublication = "";
+		int attempts = 0;
+		while (!(map.size() >= 1 || attempts >= 10)) {
+
+			try {
+
+				String newUrl = config.getEnvironment().getUrl().replace("prd", "portal-stg");
+				IpGetterPage ipGetterPage = new IpGetterPage(newUrl);
+				ipGetterPage.connect();
+
+				if (!map.containsKey(ipGetterPage.getCurrentNode())) {
+
+					LOGGER.info("Signing in " + ipGetterPage.getCurrentNode() + " ...");
+
+					LoginPage loginPage = new LoginPage(newUrl, ipGetterPage.getCookies());
+					loginPage.doLogin(config.getUser(), config.getPass());
+
+					if (loginPage.isLoginSucess()) {
+						LOGGER.info("Login success!");
+
+						String newScriptName = "selectLastPublication.groovy";
+
+						LOGGER.info(
+								"Executing script " + newScriptName + " at " + ipGetterPage.getCurrentNode() + " ...");
+
+						Script script = Script.getInstance(newScriptName);
+						lastPublication = new ServerAdminPage(newUrl, loginPage.getAuthToken(),
+								ipGetterPage.getCookies()).runScript(script.getType(), script.getScriptCode())
+										.getScriptOutput();
+						String[] lines = lastPublication.split(System.getProperty("line.separator"));
+						if (lines.length > 1) {
+							lastPublication = lines[1];
+						}
+
+						LOGGER.info("Last publication was at " + lastPublication);
+
+						LOGGER.info("Signing out " + ipGetterPage.getCurrentNode() + " ...");
+						new SimplePageImpl(newUrl, PropertiesUtil.getInstance().getPropertie("site.logout.url"),
+								ipGetterPage.getCookies());
+					}
+
+					else {
+						LOGGER.warning("Login failed");
+					}
+
+					map.put(ipGetterPage.getCurrentNode(), ipGetterPage.getCurrentNode());
+				}
+			}
+
+			catch (java.net.SocketTimeoutException e) {
+				LOGGER.warning("time out");
+			}
+
+			catch (org.jsoup.HttpStatusException e) {
+				LOGGER.warning("504");
+			}
+
+			catch (IOException e) {
+				LOGGER.warning("connection error");
+			}
+
+			attempts++;
+		}
+		LOGGER.info("Getting Last publication finished with " + attempts + " attempts.");
+		return lastPublication;
 	}
 
 	private static int clusterSizeDicovery(AppConfig config) throws InterruptedException {

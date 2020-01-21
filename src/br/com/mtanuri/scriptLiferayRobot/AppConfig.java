@@ -9,8 +9,8 @@ public class AppConfig {
 	private Environment environment = new Environment();
 	private boolean readOnly;
 
-	private String user;
-	private String pass;
+	private String user = "administrador";
+	private String pass = "92lOt$267JT0nc1UQUTs";
 
 	public AppConfig(String user, String pass) {
 		this.user = user;

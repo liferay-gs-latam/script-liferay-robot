@@ -9,6 +9,8 @@ import java.util.HashMap;
 
 public class ServerAdminPage extends SimplePageImpl {
 
+	private String scriptOutput = "";
+
 	public ServerAdminPage(String siteDomain, String authToken, HashMap<String, String> cookies) throws IOException {
 		super(siteDomain, PropertiesUtil.getInstance().getPropertie("site.controlPanel.url"), cookies, authToken);
 	}
@@ -28,6 +30,12 @@ public class ServerAdminPage extends SimplePageImpl {
 				+ "/group/control_panel/manage/-/server/script?refererPlid=2645764&_137_cur=0";
 		formData.put("_137_redirect", redirectUrl);
 		super.submit(formData);
+
+		try {
+			this.scriptOutput = super.getDoc().getElementsByTag("pre").first().html();
+		} catch (Exception e) {
+		}
+
 		return this;
 	}
 
@@ -43,4 +51,9 @@ public class ServerAdminPage extends SimplePageImpl {
 		f2.createNewFile();
 		Files.write(Paths.get(finalFileName), super.getDoc().getElementsByTag("pre").first().html().getBytes());
 	}
+
+	public String getScriptOutput() {
+		return scriptOutput;
+	}
+
 }
