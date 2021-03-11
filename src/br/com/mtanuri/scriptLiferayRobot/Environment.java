@@ -18,7 +18,10 @@ public class Environment {
 	}
 
 	public String getUrl() {
-		return "https://" + server + "-" + blueGreen + sufix;
+//		if(server.equals("prd") && blueGreen.equals("red"))
+//			return "https://www" + sufix;
+//		else
+			return "https://" + server + "-" + blueGreen + sufix;
 	}
 
 	public void setBlueGreen(String blueGreen) {

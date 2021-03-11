@@ -45,7 +45,7 @@ public class SimplePageImpl implements Page {
 		response = Jsoup.connect(url).method(Connection.Method.GET).userAgent(agent)
 				.timeout(Integer.valueOf(PropertiesUtil.getInstance().getPropertie("app.connection.timeout")))
 				.execute();
-		doc = response.parse();
+		doc = response.bufferUp().parse();
 		this.cookies.putAll(response.cookies());
 	}
 
@@ -64,10 +64,11 @@ public class SimplePageImpl implements Page {
 	public void submit(HashMap<String, String> formData) throws IOException {
 		String agent = AGENT;
 
-		response = Jsoup.connect(this.url).method(Connection.Method.POST).data(formData).cookies(this.cookies)
+		response = Jsoup.connect(url).method(Connection.Method.POST).data(formData).cookies(this.cookies)
 				.userAgent(agent)
 				.timeout(Integer.valueOf(PropertiesUtil.getInstance().getPropertie("app.connection.timeout")))
 				.execute();
+					
 		doc = response.parse();
 		this.cookies.putAll(response.cookies());
 	}

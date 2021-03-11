@@ -13,6 +13,7 @@ public class LoginPage extends SimplePageImpl {
 		HashMap<String, String> formData = new HashMap<String, String>();
 		formData.put("_58_login", user);
 		formData.put("_58_password", pass);
+		formData.put("_58_redirect", "/web/guest/home");
 		super.submit(formData);
 	}
 
