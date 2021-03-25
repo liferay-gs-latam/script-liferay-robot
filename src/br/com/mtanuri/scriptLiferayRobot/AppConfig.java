@@ -5,12 +5,15 @@ public class AppConfig {
 	private String scriptName;
 	private String printStatus;
 	private int maxAttempts = 200;
-	private int clusterSize = 1;
+	private int clusterSize = 32;
 	private Environment environment = new Environment();
 	private boolean readOnly;
 
-	private String user = "administrador";
-	private String pass = "******";
+//	private String user = "administrador";
+//	private String pass = "******";
+	
+	private String user = "liferay.script";
+	private String pass = "3B5waqImoYCdPAM11";
 
 	public AppConfig(String user, String pass) {
 		this.user = user;

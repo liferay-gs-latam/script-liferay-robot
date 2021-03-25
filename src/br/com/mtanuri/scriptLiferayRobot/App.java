@@ -7,7 +7,10 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 /**
@@ -24,8 +27,10 @@ public class App {
 			LOGGER.info(AppConfig.getDoc());
 			return;
 		}
+		
 		AppConfig config = new AppConfig(args);
-		run(config);
+		App.run(config);
+		
 	}
 
 	private static void run(AppConfig config) throws IOException, InterruptedException {
@@ -47,21 +52,37 @@ public class App {
 
 		Long time = System.currentTimeMillis();
 		int clusterSize = config.getClusterSize();
-		boolean hasNewPublication = false;
+		boolean hasNewPublication = true;
 
 		if (config.getEnvironment().getServer().equals("prd")) {
 			clusterSize = clusterSizeDicovery(config);
 			if (config.getScriptName().equals("fullCache")) {
-				String lastPublication = getLastPublication(time, config);
-				if (hasNewPublication(lastPublication, config)) {
-					hasNewPublication = true;
-					if(!config.isReadOnly()) {
-						updateExpandoValue(lastPublication, config);
-					}
-				} else {
-					LOGGER.info("Finished with no attempts due to any new publications found");
-					return;
-				}
+				Timer t = new Timer();
+				TimerTask tt = new TimerTask() {
+				    @Override
+				    public void run(){
+				    	try {
+				    	
+					    	System.out.println("**************************************************");
+					    	System.out.println("* EXECUÇÃO AGENDADA: " + new Date().toString() + "*");
+					    	System.out.println("**************************************************");
+					    	String lastPublication = App.getLastPublication(time, config);
+							
+							if (hasNewPublication(lastPublication, config)) {
+								if(!config.isReadOnly()) {
+									updateExpandoValue(lastPublication, config);
+								}
+							} else {
+								LOGGER.info("Finished with no attempts due to any new publications found");
+								return;
+							}
+				    	} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+				    };
+				};
+				t.scheduleAtFixedRate(tt,new Date(),900000); 
 			}
 			if (config.getScriptName().equals("fullx")) { // dead code
 				updateExpandoValue(time, config);
