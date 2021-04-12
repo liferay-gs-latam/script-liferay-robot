@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+group 'br.com.mtanuri.liferay'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.jsoup', name: 'jsoup', version: '1.13.1'
+}
