@@ -224,6 +224,9 @@ hs_err_pid*
 .gradle
 build/
 
+#MAVEN#
+target/
+
 # Ignore Gradle GUI config
 gradle-app.setting
 

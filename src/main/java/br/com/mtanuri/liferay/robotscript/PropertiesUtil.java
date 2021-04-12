@@ -1,8 +1,7 @@
-package scriptLiferayRobot;
+package br.com.mtanuri.liferay.robotscript;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Properties;
 
 public class PropertiesUtil {
@@ -12,7 +11,7 @@ public class PropertiesUtil {
 	private Properties prop = new Properties();
 
 	private PropertiesUtil() throws IOException {
-		InputStream resourceAsStream = ClassLoader.getSystemClassLoader().getResourceAsStream("./config.properties");
+		InputStream resourceAsStream = getClass().getResourceAsStream("/config.properties");
 		prop.load(resourceAsStream);
 		resourceAsStream.close();
 	}

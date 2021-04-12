@@ -1,4 +1,4 @@
-package scriptLiferayRobot;
+package br.com.mtanuri.liferay.robotscript;
 
 public class AppConfig {
 

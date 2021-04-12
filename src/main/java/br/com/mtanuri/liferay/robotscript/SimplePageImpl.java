@@ -1,4 +1,4 @@
-package scriptLiferayRobot;
+package br.com.mtanuri.liferay.robotscript;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;

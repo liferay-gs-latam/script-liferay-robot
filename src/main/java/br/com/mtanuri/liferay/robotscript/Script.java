@@ -1,4 +1,4 @@
-package scriptLiferayRobot;
+package br.com.mtanuri.liferay.robotscript;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +9,7 @@ public class Script {
 	//private static Script single_instance = null;
 
 	private String name;
-	private final String path = "./scripts/";
+	private final String path = "/scripts/";
 
 	private Script(String name) {
 		this.name = name;
@@ -24,7 +24,7 @@ public class Script {
 
 	public String getScriptCode() {
 		StringBuilder sb = new StringBuilder();
-		InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(path + this.name);
+		InputStream in = getClass().getResourceAsStream(path + this.name);
 		Scanner scanner = new Scanner(in);
 		while (scanner.hasNextLine()) {
 			sb.append(scanner.nextLine() + "\n");

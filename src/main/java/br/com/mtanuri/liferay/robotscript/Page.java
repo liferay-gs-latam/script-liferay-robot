@@ -1,4 +1,4 @@
-package scriptLiferayRobot;
+package br.com.mtanuri.liferay.robotscript;
 
 import java.io.IOException;
 import java.util.HashMap;
