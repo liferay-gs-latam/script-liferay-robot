@@ -28,3 +28,5 @@ Type -help to get more information about the parameters you must to give me Nice
 
 -p [pass]: The user password
 
+**How to export jar**
+Maven is configured to generate the jar with all dependencies. All you need to do is run `mvn package` and the jar-with-dependencies will be created in target/ dir
