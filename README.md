@@ -1,4 +1,4 @@
-# script-liferay-robot
+# Script Liferay Robot (Smiles)
 
 Hi! I'm Nicolas, the script executor robot! I'm going to help you by executing scripts in a customer site. 
 
@@ -30,3 +30,17 @@ Type -help to get more information about the parameters you must to give me Nice
 
 **How to export jar**
 Maven is configured to generate the jar with all dependencies. All you need to do is run `mvn package` and the jar-with-dependencies will be created in target/ dir
+
+# Step-by-step of execution
+
+Build:
+
+```
+mvn clean package
+```
+
+Execute:
+
+```
+java -jar target/scriptrobot-1.0.0-spring-boot.jar -sclearCache.groovy -m100 -c12 -hprd -eblue -uadministrator -p*******
+```
