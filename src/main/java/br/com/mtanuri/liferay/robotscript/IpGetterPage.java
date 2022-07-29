@@ -9,7 +9,7 @@ public class IpGetterPage extends SimplePageImpl {
 	}
 
 	public String getCurrentNode() throws IOException {
-		return this.getDoc().selectFirst("#" + PropertiesUtil.getInstance().getPropertie("site.ipGetter.element")).text();
+		return this.getDoc().select("#" + PropertiesUtil.getInstance().getPropertie("site.ipGetter.element")).text();
 	}
 
 }
